@@ -1,0 +1,90 @@
+#include <Servo.h>
+
+// Definimos el servo
+Servo miServo;
+
+// Pines de los ultrasonicos
+const int trigPin1 = 7;
+const int echoPin1 = 6;
+const int trigPin2 = 5;
+const int echoPin2 = 4;
+
+// Variables para las distancias y la posición actual del servo
+int distancia1;
+int distancia2;
+int ultimaPosicion = 90;  
+
+void setup() {
+  miServo.attach(9);  
+
+  // Configuramos los pines de los sensores como entrada/salida
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
+
+  Serial.begin(9600);  // Iniciamos comunicación serial para monitorear
+}
+
+void loop() {
+ 
+  distancia1 = medirDistancia(trigPin1, echoPin1);
+  distancia2 = medirDistancia(trigPin2, echoPin2);
+
+  // Mostrar las distancias en el monitor serial
+  Serial.print("Distancia Sensor 1: ");
+  Serial.print(distancia1);
+  Serial.println(" cm");
+
+  Serial.print("Distancia Sensor 2: ");
+  Serial.print(distancia2);
+  Serial.println(" cm");
+
+  // Condición: ambos sensores detectan algo
+  if ((distancia1 <= 20 && distancia1 > 0) && (distancia2 <= 20 && distancia2 > 0)) {
+    moverServo(90);  // Ángulo medio
+    Serial.println("Ambos sensores detectan: Posición MEDIA (90°)");
+  }
+  // Si solo el Sensor 1 detecta, mover a 180°
+  else if (distancia1 <= 20 && distancia1 > 0) {
+    moverServo(180);  // Gira directamente a 180°
+    Serial.println("Sensor 1 detecta: Giro a la DERECHA (180°)");
+  }
+  // Si solo el Sensor 2 detecta, mover a 0°
+  else if (distancia2 <= 20 && distancia2 > 0) {
+    moverServo(0);  // Gira directamente a 0°
+    Serial.println("Sensor 2 detecta: Giro a la IZQUIERDA (0°)");
+  }
+  // Si ninguno detecta, mantener la última posición
+  else {
+    Serial.print("Sin detección: Manteniendo la última posición en ");
+    Serial.print(ultimaPosicion);
+    Serial.println("°");
+  }
+
+  delay(200);  // Delay para evitar lecturas constantes
+}
+
+// Función para mover el servo y actualizar la última posición
+void moverServo(int angulo) {
+  if (angulo != ultimaPosicion) {  // Solo mover si es diferente de la última posición
+    miServo.write(angulo);
+    ultimaPosicion = angulo;  // Guardamos la nueva posición
+  }
+}
+
+//Medimos la distancia de los sensores
+int medirDistancia(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duracion = pulseIn(echoPin, HIGH);
+  int distanciaCalculada = duracion * 0.034 / 2;
+
+  return distanciaCalculada;
+}
